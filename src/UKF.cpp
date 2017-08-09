@@ -1,10 +1,10 @@
-#include "UnscentedKF.h"
+#include "UKF.h"
 #include "Eigen/Dense"
 
 using Eigen::MatrixXd
 using Eigen::VectorXd
 
-void UnscentedKF::setLambda(double lambda) {
+void UKF::setLambda(double lambda) {
   double n = n_x_ + n_v_;
   lambda_ = lambda;
   Lambda_ = sqrt(lambda_ + n);
@@ -16,11 +16,11 @@ void UnscentedKF::setLambda(double lambda) {
     weights_ = VectorXd::Zero(2*n+1);
   }
 }
-double UnscentedKF::getLambda() {
+double UKF::getLambda() {
   return lambda_;
 }
 
-void UnscentedKF::Init(VectorXd& x, MatrixXd& P, VectorXd& nu,
+void UKF::Init(VectorXd& x, MatrixXd& P, VectorXd& nu,
   double lambda = 999999) {
 
   /* Note, this function does not perform much error checking, such
@@ -62,7 +62,7 @@ void UnscentedKF::Init(VectorXd& x, MatrixXd& P, VectorXd& nu,
   SigPnts_ = MatrixXd::Zero(n_x, 2*n + 1);
 }
 
-void UnscentedKF::ComputeSigmaPoints() {
+void UKF::ComputeSigmaPoints() {
   /**************************************************/
   /* Update augmented state and covariance */
   /**************************************************/
@@ -76,7 +76,7 @@ void UnscentedKF::ComputeSigmaPoints() {
   SigPnts_aug << x, x + Lambda_ * A_, x - Lambda_ * A_;
 }
 
-void UnscentedKF::Predict(double dt) {
+void UKF::Predict(double dt) {
 
   // compute the sigma points
   SigPnts_in = ComputeSigmaPoints();

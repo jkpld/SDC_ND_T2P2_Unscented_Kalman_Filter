@@ -1,12 +1,12 @@
-#ifndef UnscentedKF_H_
-#define UnscentedKF_H_
+#ifndef UKF_H_
+#define UKF_H_
 
 #include "Eigen/Dense"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-class UnscentedKF {
+class UKF {
 public:
 
   VectorXd x_;
