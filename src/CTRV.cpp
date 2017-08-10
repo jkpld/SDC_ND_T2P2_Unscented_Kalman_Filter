@@ -16,6 +16,7 @@ CTRV::CTRV() {
   P_ = MatrixXd::Zero(n_x,n_x);
   P_aug_ = MatrixXd::Zero(n, n);
   nu_ = VectorXd::Zero(n_v_);
+  SigPnts_ = MatrixXd::Zero(n_x_, 2*n + 1);
 
   // Initialize what parameters are angles
   labelParametersAsAngle();

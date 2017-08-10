@@ -53,7 +53,7 @@ void UKF::Predict(double dt) {
 
   // pass the sigma points through the ProcessModel() and save the result to
   // the property SigPnts_ for later use.
-  SigPnts_ = ProcessModel(SigPnts, dt);
+  SigPnts_ << ProcessModel(SigPnts, dt);
 
   // Compute mean of predicted state
   ComputeMeanAndCovariance(SigPnts_, x_, P_, angleParams_)
