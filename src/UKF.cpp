@@ -5,6 +5,12 @@
 using Eigen::MatrixXd
 using Eigen::VectorXd
 
+void UKF::Init(VectorXd& x, MatrixXd& P) {
+  // Initialize state and covariance;
+  x_ << x;
+  P_ << P;
+}
+
 void UKF::setLambda(double lambda) {
   double n = n_x_ + n_v_;
   Lambda_ = sqrt(lambda + n);
@@ -36,15 +42,21 @@ void UKF::setProcessNoise(VectorXd& nu) {
     P_aug_.block(n_x_, n_x_, n_v_, n_v_) << Q_;
   }
 }
-
 VectorXd UKF::getProcessNoise() {
   return nu_;
 }
 
-void UKF::Init(VectorXd& x, MatrixXd& P) {
-  // Initialize state and covariance;
-  x_ << x;
-  P_ << P;
+void UKF::Predict(double dt) {
+
+  // compute the sigma points
+  SigPnts = ComputeSigmaPoints();
+
+  // pass the sigma points through the ProcessModel() and save the result to
+  // the property SigPnts_ for later use.
+  SigPnts_ = ProcessModel(SigPnts, dt);
+
+  // Compute mean of predicted state
+  ComputeMeanAndCovariance(SigPnts_, x_, P_, angleParams_)
 }
 
 MatrixXd UKF::ComputeSigmaPoints() {
@@ -52,13 +64,52 @@ MatrixXd UKF::ComputeSigmaPoints() {
   x_aug_.head(n_x_) << x_;
   P_aug_.block(0,0,n_x_,n_x_) << P_;
 
-  // Compute the sigma points
-  SigPnts_ = MatrixXd::Zero(n_x, 2*n + 1); // init matrix
+  // Compute the augmented sigma points
+  double n = n_x_ + n_v_;
+  SigPnts = MatrixXd::Zero(n, 2*n + 1); // init matrix
 
   MatrixXd A_ = P_aug_.llt().matrixL(); // Sqrt P
-  SigPnts_ << x, x + Lambda_ * A_, x - Lambda_ * A_;
+  SigPnts << x_aug_, x_aug_ + Lambda_ * A_, x_aug_ - Lambda_ * A_;
 
-  return SigPnts_;
+  return SigPnts;
+}
+
+void UKF::ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& mean,
+  MatrixXd& covar, VectorXd& angleParams) {
+
+  // Compute mean of predicted state
+  mean = SigmaPoints*weights_;
+
+  // Compute covariance of predicted state
+  MatrixXd diff = ComputeStateDifference(SigmaPoints, mean, angleParams); // mean center
+  covar = diff * weights_.asDiagonal() * diff.transpose();
+}
+
+void UKF::ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& mean,
+  MatrixXd& covar) {
+
+  // Compute mean of predicted state
+  mean = SigmaPoints*weights_;
+
+  // Compute covariance of predicted state
+  MatrixXd diff = ComputeStateDifference(SigmaPoints, mean); // mean center
+  covar = diff * weights_.asDiagonal() * diff.transpose();
+}
+
+MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state,
+  VectorXd& angleParams) {
+
+  // 1. Get the difference between the sigma points and the mean sigma point
+  MatrixXd diff = SigPnts.colwise() - state;
+  // 2. Normalize angles
+  NormalizeAngles(diff, angleParams)
+  return diff;
+}
+
+MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state) {
+  // 1. Get the difference between the sigma points and the mean sigma point
+  MatrixXd diff = SigPnts.colwise() - state;
+  return diff;
 }
 
 void NormalizeAngles(MatrixXd& M, const VectorXd angleParams) {
@@ -74,49 +125,4 @@ void NormalizeAngles(MatrixXd& M, const VectorXd angleParams) {
       M.row(ii) = A;
     }
   }
-}
-
-MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state, VectorXd& angleParams) {
-  // 1. Get the difference between the sigma points and the mean sigma point
-  MatrixXd diff = SigPnts.colwise() - state;
-  // 2. Normalize angles
-  NormalizeAngles(diff, angleParams)
-
-  return diff;
-}
-
-MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state) {
-  // 1. Get the difference between the sigma points and the mean sigma point
-  MatrixXd diff = SigPnts.colwise() - state;
-  return diff;
-}
-
-void UKF::ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& mean, MatrixXd& covar, VectorXd& angleParams) {
-  // Compute mean of predicted state
-  mean = SigmaPoints*weights_;
-
-  // Compute covariance of predicted state
-  MatrixXd diff = ComputeStateDifference(SigmaPoints, mean, angleParams); // mean center
-  covar = diff * weights_.asDiagonal() * diff.transpose();
-}
-
-void UKF::ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& mean, MatrixXd& covar) {
-  // Compute mean of predicted state
-  mean = SigmaPoints*weights_;
-
-  // Compute covariance of predicted state
-  MatrixXd diff = ComputeStateDifference(SigmaPoints, mean); // mean center
-  covar = diff * weights_.asDiagonal() * diff.transpose();
-}
-
-void UKF::Predict(double dt) {
-
-  // compute the sigma points
-  SigPnts_in = ComputeSigmaPoints();
-
-  // pass the sigma points through the ProcessModel()
-  SigPnts_ = ProcessModel(SigPnts_in, dt);
-
-  // Compute mean of predicted state
-  ComputeMeanAndCovariance(SigPnts_, x_, P_, angleParams_)
 }

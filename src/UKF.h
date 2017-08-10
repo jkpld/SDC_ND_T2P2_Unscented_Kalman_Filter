@@ -52,12 +52,6 @@ private:
   // MatrixXd A_;
 
   /*
-   * ComputeSigmaPoints Method to compute the augmented sigma points from the
-   *  current state/covariance
-   */
-  MatrixXd ComputeSigmaPoints();
-
-  /*
    * labelParametersAsAngle Virtual method to label state parameters as being
    *  angles
    */
@@ -71,11 +65,41 @@ private:
    */
   virtual MatrixXd ProcessModel(MatrixXd SigPnts_aug, double dt) = 0;
 
-  void NormalizeAngles(MatrixXd& M, VectorXd angleParams);
+  /*
+   * ComputeSigmaPoints Method to compute the augmented sigma points from the
+   *  current state/covariance
+   */
+  MatrixXd ComputeSigmaPoints();
+
+  /*
+   * ComputeMeanAndCovariance Method for computing the mean and covariance from
+      a set of sigma points
+   * @param (input) SigmaPoints Matrix of the sigma points
+   * @param (output) x Mean of sigma points
+   * @param (output) P Covariance of sigma points
+   * @param (optional, input) angleParams Vector that labels state parameters as
+      angles.
+   */
   void ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& x, MatrixXd P);
   void ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& x, MatrixXd P, VectorXd& angleParams);
+
+  /*
+   * ComputeStateDifference Method for computing the difference between two
+      state vectors.
+   * @param SigmaPoints Matrix where each column is a state vector
+   * @param state State vector to be subtracted from each column of SigmaPoints
+   * @param (optional) angleParams Vector that labels state parameters as
+      angles.
+   */
   MatrixXd ComputeStateDifference(MatrixXd& SigmaPoints, VectorXd& state);
   MatrixXd ComputeStateDifference(MatrixXd& SigmaPoints, VectorXd& state, VectorXd& angleParams);
+
+  /*
+   * NormalizeAngles Method to normalize angles to the range (-pi, +pi]
+   * @param (in/out) M Matrix of state vectors (as columns)
+   * @param angleParams Vector labeling each row of M as being an angle or not.
+   */
+  void NormalizeAngles(MatrixXd& M, VectorXd angleParams);
 };
 
 
