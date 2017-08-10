@@ -11,6 +11,9 @@ using Eigen::VectorXd;
 class Sensor {
 public:
 
+  // Number of measurment variables
+  unsigned int n;
+
   // measurment noise covariance
   MatrixXd R;
 

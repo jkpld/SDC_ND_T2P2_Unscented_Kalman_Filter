@@ -14,6 +14,7 @@ Radar::Radar() {
   R.diagonal() << 0.09, 0.0009, 0.09;
   angleParams_ = VectorXd::Zero(3);
   angleParams_(1) = 1;
+  n = 3;
 }
 
 Radar::~Radar() {}
@@ -66,6 +67,7 @@ Lidar::Lidar() {
   R = MatrixXd::Zero(2,2);
   R.diagonal() << 0.0225, 0.0225;
   angleParams_ = VectorXd::Zero(2);
+  n = 2;
 }
 Lidar::~Lidar() {}
 
