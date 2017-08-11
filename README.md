@@ -1,80 +1,59 @@
-# Unscented Kalman Filter Project Starter Code
+# Unscented Kalman Filter Project
+
 Self-Driving Car Engineer Nanodegree Program
 
-In this project utilize an Unscented Kalman Filter to estimate the state of a moving object of interest with noisy lidar and radar measurements. Passing the project requires obtaining RMSE values that are lower that the tolerance outlined in the project reburic. 
+**The goal of this project is to utilize an unscented kalman filter with a constant turn rate and velocity model to estimate the state of a moving object of interest with noisy lidar and radar measurements.**
 
-This project involves the Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases)
+## Code structure
+The project code is broken up into several different classes:
+* Abstract `UKF` class.
+* Abstract `Sensor` class.
+* A `FusionUKF` class.
 
-This repository includes two files that can be used to set up and intall [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) for either Linux or Mac systems. For windows you can use either Docker, VMware, or even [Windows 10 Bash on Ubuntu](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/) to install uWebSocketIO. Please see [this concept in the classroom](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/16cf4a78-4fc7-49e1-8621-3450ca938b77) for the required version and installation scripts.
+### `UKF` class
+The purpose of the UKF class is to contain all Kalman filter code, such as the Predict and Update methods, as well as contain all methods for the unscented transformation. The primary public methods include:
+* `Init(x,P)`: Initialize the KF using the state `x` and covariance `P`.
+* `setProcessNoise(noise)`: Set the process noise vector.
+* `Predict(dt)`: Predict what the state vector will be in `dt` time.
+* `Update(measurement, Sensor)`: Use a measurement produced from a Sensor to update the KF state/covariance.
 
-Once the install for uWebSocketIO is complete, the main program can be built and ran by doing the following from the project top directory.
+There are two private abstract methods that must be implemented by a specific UKF model class:
+* `ProcessModel(SigmaPoints, dt)`: Apply a model that propagates the sigma points (state vectors) forward by `dt` time.
+* `labelParametersAsAngle(isAngle)`: Set which state parameters are angles. _This is used for normalizing any angles_.
 
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-5. ./UnscentedKF
+#### Concrete `UKF` class
+The abstract UKF class is used to define the `CTRV` class, which implements the constant turn rate and velocity model.
 
-Note that the programs that need to be written to accomplish the project are src/ukf.cpp, src/ukf.h, tools.cpp, and tools.h
+### `Sensor` class
+The purpose of the sensor class is to hold data and methods that are unique to the sensor. The data the class holds are
+* The measurement noise covariance matrix, `R`.
 
-The program main.cpp has already been filled out, but feel free to modify it.
+The abstract methods include
+* `state_to_measure(state)`: Convert from state space to measurement space.
+* `measure_to_state(meas)`: Convert from measurement space to state space.
 
-Here is the main protcol that main.cpp uses for uWebSocketIO in communicating with the simulator.
+#### Concrete `Sensors`
+The abstract `Sensor` class is used to define two different concrete classes, `Radar` and `Lidar`. These classes implement the virtual functions listed above.
+
+### `FusionUKF` class
+This class handles fusing data from multiple sensors to track a object. This class has one method
+* `ProcessMeasurement(MeasurementPackage)`: primary method that initializes the Kalman filter using the first measurement, and then updates it using subsequent measurements.
+
+and contains instances of the `CTRV`, `Radar`, and `Lidar` classes.
+
+## Parameter values
+
+#### Process noise values
+I use process noise values of &sigma;<sub>a</sub> = 0.2 and &sigma;<sub>d<sup>2</sup>&psi;/dt<sup>2</sup></sub> = 0.2. This linear acceleration noise would approximately correspond to a biker accelerating from a stop to 44 m/s over 10 seconds.
+
+#### Initialization values
+I only used the most basic initialization, the first measurement. The covariance was initialized using `[0.2, 0.2, 7, 0.1, 0.1]` along the diagonal.
+
+## Results
+The final RMSE values obtained were `X=0.0634`, `Y=0.0832`, `Vx=0.3331`, and `Vy=0.1661`. Additionally the NIS values are shown in the image below. _These values are using both Lidar and Radar_.
+
+![NIS](NIS.jpg)
 
 
-INPUT: values provided by the simulator to the c++ program
-
-["sensor_measurement"] => the measurment that the simulator observed (either lidar or radar)
-
-
-OUTPUT: values provided by the c++ program to the simulator
-
-["estimate_x"] <= kalman filter estimated position x
-["estimate_y"] <= kalman filter estimated position y
-["rmse_x"]
-["rmse_y"]
-["rmse_vx"]
-["rmse_vy"]
-
----
-
-## Other Important Dependencies
-
-* cmake >= v3.5
-* make >= v4.1
-* gcc/g++ >= v5.4
-
-## Basic Build Instructions
-
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./UnscentedKF` Previous versions use i/o from text files.  The current state uses i/o
-from the simulator.
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html) as much as possible.
-
-## Generating Additional Data
-
-This is optional!
-
-If you'd like to generate your own radar and lidar data, see the
-[utilities repo](https://github.com/udacity/CarND-Mercedes-SF-Utilities) for
-Matlab scripts that can generate additional data.
-
-## Project Instructions and Rubric
-
-This information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/c3eb3583-17b2-4d83-abf7-d852ae1b9fff/concepts/f437b8b0-f2d8-43b0-9662-72ac4e4029c1)
-for instructions and the project rubric.
+### Notes
+I modified the source list in CMakeLists.txt to include the necessary files.
