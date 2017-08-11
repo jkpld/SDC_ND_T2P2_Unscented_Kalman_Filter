@@ -3,6 +3,7 @@
 
 #include "Eigen/Dense"
 #include "Sensors.h"
+#include <math.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
