@@ -19,10 +19,11 @@ public:
   CTRV();
   ~CTRV();
 
+private:
   // define virtual methods
-  MatrixXd ProcessModel(MatrixXd SigPnts_aug, double dt);
-  void labelParametersAsAngle(VectorXd& isAngle);
+  MatrixXd ProcessModel(MatrixXd& SigPnts_aug, double dt);
+  void labelParametersAsAngle();
 
 };
 
-#endif CTRV_H_
+#endif

@@ -13,6 +13,14 @@ public:
 
   VectorXd x_;
   MatrixXd P_;
+  double n_x_ = 0;
+  double n_v_ = 0;
+
+  VectorXd nu_;
+  VectorXd x_aug_;
+  MatrixXd P_aug_;
+  MatrixXd SigPnts_;
+  VectorXd angleParams_;
 
   /**
    * Init initializes the unscented kalman filter
@@ -48,18 +56,14 @@ public:
 
 private:
 
-  double n_x_ = 0;
-  double n_v_ = 0;
+
   double Lambda_ = sqrt(3); // sqrt(lambda + n)
 
-  VectorXd nu_;
-  VectorXd angleParams_;
+
+
 
   VectorXd weights_;
-  VectorXd x_aug_;
-  MatrixXd P_aug_;
-  // MatrixXd Q_;
-  MatrixXd SigPnts_;
+
   // MatrixXd A_;
 
   /*
@@ -74,7 +78,7 @@ private:
    * @param SigPnts_aug The augmented sigma points
    * @param dt Amount of time we want to predict our state into the future.
    */
-  virtual MatrixXd ProcessModel(MatrixXd SigPnts_aug, double dt) = 0;
+  virtual MatrixXd ProcessModel(MatrixXd& SigPnts_aug, double dt) = 0;
 
   /*
    * ComputeSigmaPoints Method to compute the augmented sigma points from the
@@ -91,8 +95,8 @@ private:
    * @param (optional, input) angleParams Vector that labels state parameters as
       angles.
    */
-  void ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& x, MatrixXd P);
-  void ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& x, MatrixXd P, VectorXd& angleParams);
+  void ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& x, MatrixXd& P);
+  void ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& x, MatrixXd& P, VectorXd& angleParams);
 
   /*
    * ComputeStateDifference Method for computing the difference between two
@@ -110,8 +114,8 @@ private:
    * @param (in/out) M Matrix of state vectors (as columns)
    * @param angleParams Vector labeling each row of M as being an angle or not.
    */
-  void NormalizeAngles(MatrixXd& M, VectorXd angleParams);
-  void NormalizeAngles(VectorXd& V, VectorXd angleParams);
+  void NormalizeAngles(MatrixXd& M, VectorXd& angleParams);
+  void NormalizeAngles(VectorXd& V, VectorXd& angleParams);
 };
 
 

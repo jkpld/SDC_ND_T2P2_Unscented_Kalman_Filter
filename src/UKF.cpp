@@ -2,8 +2,9 @@
 #include "Eigen/Dense"
 #include <iostream>
 
-using Eigen::MatrixXd
-using Eigen::VectorXd
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+using Eigen::ArrayXd;
 
 void UKF::Init(VectorXd& x, MatrixXd& P) {
   // Initialize state and covariance;
@@ -16,8 +17,8 @@ void UKF::setLambda(double lambda) {
   Lambda_ = sqrt(lambda + n);
 
   if (n > 0) {
-    weights_ = VectorXd::Ones(2*n+1)/(2*(lambda + n))
-    weights(0) *= 2*lambda;
+    weights_ = VectorXd::Ones(2*n+1)/(2*(lambda + n));
+    weights_(0) *= 2*lambda;
   } else {
     weights_ = VectorXd::Zero(2*n+1);
   }
@@ -49,14 +50,14 @@ VectorXd UKF::getProcessNoise() {
 void UKF::Predict(double dt) {
 
   // compute the sigma points
-  SigPnts = ComputeSigmaPoints();
+  MatrixXd SigPnts = ComputeSigmaPoints();
 
   // pass the sigma points through the ProcessModel() and save the result to
   // the property SigPnts_ for later use.
   SigPnts_ << ProcessModel(SigPnts, dt);
 
   // Compute mean of predicted state
-  ComputeMeanAndCovariance(SigPnts_, x_, P_, angleParams_)
+  ComputeMeanAndCovariance(SigPnts_, x_, P_, angleParams_);
 }
 
 void UKF::Update(VectorXd &zk1, Sensor &sensor) {
@@ -68,14 +69,14 @@ void UKF::Update(VectorXd &zk1, Sensor &sensor) {
   //  2. Compute the mean and covariance of the predicted sigma points.
   VectorXd zk1k = VectorXd::Zero(sensor.n); // nz x 1
   MatrixXd Sk1k = MatrixXd::Zero(sensor.n, sensor.n); // nz x nz
-  ComputeMeanAndCovariance(Z, zk1k, Sk1k, sensor.angleParams_)
+  ComputeMeanAndCovariance(Z, zk1k, Sk1k, sensor.angleParams_);
 
   //  3. Add in the sensor noise.
   Sk1k += sensor.R;
 
   // Compute cross-correlation
   MatrixXd dX = ComputeStateDifference(SigPnts_, x_, angleParams_); // nx x L
-  MatrixXd dZ = ComputeStateDifference(Z, zk1k, sensor.angleParams_) // nz x L
+  MatrixXd dZ = ComputeStateDifference(Z, zk1k, sensor.angleParams_); // nz x L
 
   MatrixXd T = dX * weights_.asDiagonal() * dZ.transpose(); // (nx x nz) = (nx x L) (L x L) (L x nz)
 
@@ -83,7 +84,8 @@ void UKF::Update(VectorXd &zk1, Sensor &sensor) {
   MatrixXd K = T * Sk1k.inverse(); // nx x nz
 
   // Compute predicted and measurment difference
-  VectorXd dz = NormalizeAngles(zk1 - zk1k, sensor.angleParams_); // nz x 1
+  VectorXd dz = zk1 - zk1k;
+  NormalizeAngles(dz, sensor.angleParams_); // nz x 1
 
   // Compute updated state and covariance
   x_ += K * dz; // nx x 1
@@ -97,7 +99,7 @@ MatrixXd UKF::ComputeSigmaPoints() {
 
   // Compute the augmented sigma points
   double n = n_x_ + n_v_;
-  SigPnts = MatrixXd::Zero(n, 2*n + 1); // init matrix
+  MatrixXd SigPnts = MatrixXd::Zero(n, 2*n + 1); // init matrix
 
   MatrixXd A_ = P_aug_.llt().matrixL(); // Sqrt P
   SigPnts << x_aug_, x_aug_ + Lambda_ * A_, x_aug_ - Lambda_ * A_;
@@ -127,30 +129,32 @@ void UKF::ComputeMeanAndCovariance(MatrixXd& SigmaPoints, VectorXd& mean,
   covar = diff * weights_.asDiagonal() * diff.transpose();
 }
 
-MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state,
+MatrixXd UKF::ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state,
   VectorXd& angleParams) {
 
   // 1. Get the difference between the sigma points and the mean sigma point
   MatrixXd diff = SigPnts.colwise() - state;
   // 2. Normalize angles
-  NormalizeAngles(diff, angleParams)
+  NormalizeAngles(diff, angleParams);
   return diff;
 }
 
-MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state) {
+MatrixXd UKF::ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state) {
   // 1. Get the difference between the sigma points and the mean sigma point
   MatrixXd diff = SigPnts.colwise() - state;
   return diff;
 }
 
-void NormalizeAngles(MatrixXd& M, VectorXd angleParams) {
+void UKF::NormalizeAngles(MatrixXd& M, VectorXd& angleParams) {
   for (unsigned int ii=0; ii < angleParams.size(); ii++) {
     if (angleParams(ii)) {
       ArrayXd A = M.row(ii);
 
       // Wrap angles to (-pi, +pi]
-      A = fmod(A + M_PI, 2*M_PI);
-      if (A < 0) A += 2*M_PI;
+      A = A.unaryExpr([](const double x) { return fmod(x+M_PI,2*M_PI); });
+      A = (A < 0).select(A+2*M_PI,A);
+      // A = fmod(A + M_PI, 2*M_PI);
+      // if (A < 0) A += 2*M_PI;
       A -= M_PI;
 
       M.row(ii) = A;
@@ -158,7 +162,7 @@ void NormalizeAngles(MatrixXd& M, VectorXd angleParams) {
   }
 }
 
-void NormalizeAngles(VexctorXd& V, VectorXd angleParams) {
+void UKF::NormalizeAngles(VectorXd& V, VectorXd& angleParams) {
   for (unsigned int ii=0; ii < angleParams.size(); ii++) {
     if (angleParams(ii)) {
       double A = V(ii);

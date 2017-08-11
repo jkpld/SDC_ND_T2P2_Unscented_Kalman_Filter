@@ -5,6 +5,7 @@
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using Eigen::ArrayXd;
 
 /*******************************************************************************
 /*   Radar class definitions
@@ -25,10 +26,10 @@ MatrixXd Radar::state_to_measure(const MatrixXd &SigmaPoints) {
   int nSP = SigmaPoints.cols();
 
   // extract the needed values
-  ArrayXd rx = state.row(0);
-  ArrayXd ry = state.row(1);
-  ArrayXd v = state.row(2);
-  ArrayXd psi = state.row(3);
+  ArrayXd rx = SigmaPoints.row(0);
+  ArrayXd ry = SigmaPoints.row(1);
+  ArrayXd v = SigmaPoints.row(2);
+  ArrayXd psi = SigmaPoints.row(3);
 
   // compute the velocity
   ArrayXd vx = v*psi.cos();
@@ -36,14 +37,18 @@ MatrixXd Radar::state_to_measure(const MatrixXd &SigmaPoints) {
 
   // compute the object's polar angle
   ArrayXd phi = ArrayXd::Zero(nSP);
-  for (unsigned int ii=0; ii<nSP; i++) {
+  for (unsigned int ii=0; ii<nSP; ii++) {
     phi(ii) = atan2(ry(ii),rx(ii));
   }
+
+  // compute radius
+  ArrayXd r = (rx*rx + ry*ry).sqrt();
 
   // initialize the output matrix
   MatrixXd meas = MatrixXd(n, nSP);
 
-  meas.row(0) = sqrt(rx*rx + ry*ry); // r
+
+  meas.row(0) = r;
   meas.row(1) = phi;
   meas.row(2) = (rx*vx + ry*vy)/r; // r_dot
 

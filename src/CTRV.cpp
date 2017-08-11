@@ -1,8 +1,9 @@
 #include "CTRV.h"
 #include "Eigen/Dense"
 
-using Eigen::MatrixXd
-using Eigen::VectorXd
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
+using Eigen::ArrayXd;
 
 CTRV::CTRV() {
   // Set problem size
@@ -11,9 +12,9 @@ CTRV::CTRV() {
   double n = n_x_ + n_v_;
 
   // Initialize matrices and vectors;
-  x_ = VectorXd::Zero(n_x);
+  x_ = VectorXd::Zero(n_x_);
   x_aug_ = VectorXd::Zero(n);
-  P_ = MatrixXd::Zero(n_x,n_x);
+  P_ = MatrixXd::Zero(n_x_,n_x_);
   P_aug_ = MatrixXd::Zero(n, n);
   nu_ = VectorXd::Zero(n_v_);
   SigPnts_ = MatrixXd::Zero(n_x_, 2*n + 1);
@@ -25,10 +26,12 @@ CTRV::CTRV() {
   setLambda(3-n);
 }
 
-void labelParametersAsAngle() {
+void CTRV::labelParametersAsAngle() {
   angleParams_ = VectorXd::Zero(n_x_);
   angleParams_(3) = 1;
 }
+
+CTRV::~CTRV() {}
 
 MatrixXd CTRV::ProcessModel(MatrixXd& SP, double dt) {
   /* Remember: SP (Sigma points) is agumented so that the columns are
@@ -58,14 +61,14 @@ MatrixXd CTRV::ProcessModel(MatrixXd& SP, double dt) {
   // Create the predicted change in the state
   MatrixXd dx = MatrixXd::Zero(n_x_, SP.cols());
 
-  ArrayXd isPsiZero = psid < 0.001;
+  // ArrayXd isPsiZero = psid < 0.001;
 
   // If psi_dot is zero, then use the limit of the expression as psi_dot goes to
   //  zero
-  dx.row(0) = isPsiZero.select(v*cosPsi*dt,
+  dx.row(0) = (psid < 0.001).select(v*cosPsi*dt,
     (v/nu_psidd)*((psi+psid*dt).sin() - sinPsi));
 
-  dx.row(1) = isPsiZero.select(v*sinPsi*dt,
+  dx.row(1) = (psid < 0.001).select(v*sinPsi*dt,
     (v/nu_psidd)*(cosPsi - (psi+psid*dt).cos()));
 
   dx.row(3) = psid*dt;
