@@ -1,7 +1,7 @@
 #include "Sensors.h"
 #include "Eigen/Dense"
 // #include <math.h>
-#include <iostream>
+// #include <iostream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -22,7 +22,7 @@ Radar::~Radar() {}
 MatrixXd Radar::state_to_measure(const MatrixXd &SigmaPoints) {
 
   // Get the number of states
-  int n = SigmaPoints.cols();
+  int nSP = SigmaPoints.cols();
 
   // extract the needed values
   ArrayXd rx = state.row(0);
@@ -35,13 +35,13 @@ MatrixXd Radar::state_to_measure(const MatrixXd &SigmaPoints) {
   ArrayXd vy = v*psi.sin();
 
   // compute the object's polar angle
-  ArrayXd phi = ArrayXd::Zero(n);
-  for (unsigned int ii=0; ii<n; i++) {
+  ArrayXd phi = ArrayXd::Zero(nSP);
+  for (unsigned int ii=0; ii<nSP; i++) {
     phi(ii) = atan2(ry(ii),rx(ii));
   }
 
   // initialize the output matrix
-  MatrixXd meas = MatrixXd(3, n);
+  MatrixXd meas = MatrixXd(n, nSP);
 
   meas.row(0) = sqrt(rx*rx + ry*ry); // r
   meas.row(1) = phi;
@@ -54,7 +54,7 @@ VectorXd Radar::measure_to_state(const VectorXd &meas) {
   float r = meas(0);
   float phi = meas(1);
 
-  VectorXd state = VectorXd::Zero(4);
+  VectorXd state = VectorXd::Zero(5);
   state(0) = r*cos(phi);
   state(1) = r*sin(phi);
   return state;
@@ -71,13 +71,16 @@ Lidar::Lidar() {
 }
 Lidar::~Lidar() {}
 
-VectorXd Lidar::measure_to_state(const VectorXd &meas) {
-  return H_.transpose() * meas;
+MatrixXd Lidar::state_to_measure(const MatrixXd &SigmaPoints) {
+  MatrixXd meas = MatrixXd::Zero(n,SigmaPoints.cols());
+  meas.row(0) = SigmaPoints.row(0);
+  meas.row(1) = SigmaPoints.row(1);
+  return meas;
 }
 
-VectorXd Lidar::state_to_measure(const VectorXd &state) {
-  return H_*state;
-}
-MatrixXd Lidar::Jacobian(const VectorXd &state) {
-  return Hj_;
+VectorXd Lidar::measure_to_state(const VectorXd &meas) {
+  VectorXd state = VectorXd::Zero(5);
+  state(0) = meas(0);
+  state(1) = meas(1);
+  return state;
 }
