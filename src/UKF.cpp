@@ -59,6 +59,37 @@ void UKF::Predict(double dt) {
   ComputeMeanAndCovariance(SigPnts_, x_, P_, angleParams_)
 }
 
+void UKF::Update(VectorXd &zk1, Sensor &sensor) {
+
+  // Compute the predicted measurment from the current state (sigma points)
+  //  1. Convert the state to measurment space.
+  MatrixXd Z = sensor.state_to_measure(SigPnts_); // nz x L
+
+  //  2. Compute the mean and covariance of the predicted sigma points.
+  VectorXd zk1k = VectorXd::Zero(sensor.n); // nz x 1
+  MatrixXd Sk1k = MatrixXd::Zero(sensor.n, sensor.n); // nz x nz
+  ComputeMeanAndCovariance(Z, zk1k, Sk1k, sensor.angleParams_)
+
+  //  3. Add in the sensor noise.
+  Sk1k += sensor.R;
+
+  // Compute cross-correlation
+  MatrixXd dX = ComputeStateDifference(SigPnts_, x_, angleParams_); // nx x L
+  MatrixXd dZ = ComputeStateDifference(Z, zk1k, sensor.angleParams_) // nz x L
+
+  MatrixXd T = dX * weights_.asDiagonal() * dZ.transpose(); // (nx x nz) = (nx x L) (L x L) (L x nz)
+
+  // Compute Kalman Gain
+  MatrixXd K = T * Sk1k.inverse(); // nx x nz
+
+  // Compute predicted and measurment difference
+  VectorXd dz = NormalizeAngles(zk1 - zk1k, sensor.angleParams_); // nz x 1
+
+  // Compute updated state and covariance
+  x_ += K * dz; // nx x 1
+  P_ -= K * Sk1k * K.transpose(); // nx x nx
+}
+
 MatrixXd UKF::ComputeSigmaPoints() {
   // Update augmented state and covariance
   x_aug_.head(n_x_) << x_;
@@ -112,7 +143,7 @@ MatrixXd ComputeStateDifference(MatrixXd& SigPnts, VectorXd& state) {
   return diff;
 }
 
-void NormalizeAngles(MatrixXd& M, const VectorXd angleParams) {
+void NormalizeAngles(MatrixXd& M, VectorXd angleParams) {
   for (unsigned int ii=0; ii < angleParams.size(); ii++) {
     if (angleParams(ii)) {
       ArrayXd A = M.row(ii);
@@ -123,6 +154,21 @@ void NormalizeAngles(MatrixXd& M, const VectorXd angleParams) {
       A -= M_PI;
 
       M.row(ii) = A;
+    }
+  }
+}
+
+void NormalizeAngles(VexctorXd& V, VectorXd angleParams) {
+  for (unsigned int ii=0; ii < angleParams.size(); ii++) {
+    if (angleParams(ii)) {
+      double A = V(ii);
+
+      // Wrap angles to (-pi, +pi]
+      A = fmod(A + M_PI, 2*M_PI);
+      if (A < 0) A += 2*M_PI;
+      A -= M_PI;
+
+      V(ii) = A;
     }
   }
 }

@@ -2,6 +2,7 @@
 #define UKF_H_
 
 #include "Eigen/Dense"
+#include "Sensors.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -31,9 +32,18 @@ public:
   void setProcessNoise(VectorXd& nu);
   VectorXd getProcessNoise();
 
-  // Method to preform prediction;
-  // @param dt Amount of time we want to predict our state into the future.
-  MatrixXd Predict(double dt);
+  /*
+   * Predict Method to preform prediction
+   * @param dt Amount of time we want to predict our state into the future.
+   */
+  void Predict(double dt);
+
+  /*
+   * Update Method to preform update
+   * @param meas New measurement.
+   * @param sensor The sensor that obtained the measurment.
+   */
+  void Update(VectorXd &meas, Sensor &sensor);
 
 private:
 
@@ -100,6 +110,7 @@ private:
    * @param angleParams Vector labeling each row of M as being an angle or not.
    */
   void NormalizeAngles(MatrixXd& M, VectorXd angleParams);
+  void NormalizeAngles(VectorXd& V, VectorXd angleParams);
 };
 
 
