@@ -1,5 +1,6 @@
 #include "CTRV.h"
 #include "Eigen/Dense"
+#include <iostream>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -37,7 +38,6 @@ MatrixXd CTRV::ProcessModel(MatrixXd& SP, double dt) {
   /* Remember: SP (Sigma points) is agumented so that the columns are
       x = [r_x, r_y, v, psi, psi_dot, nu_a, nu_psidd]
   */
-
   // Extract the needed quantities
   ArrayXd v = SP.row(2);
   ArrayXd psi = SP.row(3);
@@ -66,15 +66,15 @@ MatrixXd CTRV::ProcessModel(MatrixXd& SP, double dt) {
   // If psi_dot is zero, then use the limit of the expression as psi_dot goes to
   //  zero
   dx.row(0) = (psid < 0.001).select(v*cosPsi*dt,
-    (v/nu_psidd)*((psi+psid*dt).sin() - sinPsi));
+    (v/psid)*((psi+psid*dt).sin() - sinPsi));
 
   dx.row(1) = (psid < 0.001).select(v*sinPsi*dt,
-    (v/nu_psidd)*(cosPsi - (psi+psid*dt).cos()));
+    (v/psid)*(cosPsi - (psi+psid*dt).cos()));
 
   dx.row(3) = psid*dt;
 
-
   // Create the final result
-  MatrixXd xk1 = dx + noise;
-  return xk1;
+  MatrixXd SPk1 = SP.block(0,0,n_x_,SP.cols()) + dx + noise;
+
+  return SPk1;
 }

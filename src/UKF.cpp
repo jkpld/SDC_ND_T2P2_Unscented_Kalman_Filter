@@ -81,7 +81,8 @@ void UKF::Update(VectorXd &zk1, Sensor &sensor) {
   MatrixXd T = dX * weights_.asDiagonal() * dZ.transpose(); // (nx x nz) = (nx x L) (L x L) (L x nz)
 
   // Compute Kalman Gain
-  MatrixXd K = T * Sk1k.inverse(); // nx x nz
+  MatrixXd Sk1k_inv = Sk1k.inverse();
+  MatrixXd K = T * Sk1k_inv; // nx x nz
 
   // Compute predicted and measurment difference
   VectorXd dz = zk1 - zk1k;
@@ -90,9 +91,13 @@ void UKF::Update(VectorXd &zk1, Sensor &sensor) {
   // Compute updated state and covariance
   x_ += K * dz; // nx x 1
   P_ -= K * Sk1k * K.transpose(); // nx x nx
+
+  // Compute NIS
+  NIS_ = dz.transpose() * Sk1k_inv * dz;
 }
 
 MatrixXd UKF::ComputeSigmaPoints() {
+
   // Update augmented state and covariance
   x_aug_.head(n_x_) << x_;
   P_aug_.block(0,0,n_x_,n_x_) << P_;
@@ -102,7 +107,7 @@ MatrixXd UKF::ComputeSigmaPoints() {
   MatrixXd SigPnts = MatrixXd::Zero(n, 2*n + 1); // init matrix
 
   MatrixXd A_ = P_aug_.llt().matrixL(); // Sqrt P
-  SigPnts << x_aug_, x_aug_ + Lambda_ * A_, x_aug_ - Lambda_ * A_;
+  SigPnts << x_aug_, (Lambda_ * A_).colwise()+x_aug_, (-Lambda_ * A_).colwise()+x_aug_;
 
   return SigPnts;
 }

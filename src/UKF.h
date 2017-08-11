@@ -15,6 +15,7 @@ public:
   MatrixXd P_;
   double n_x_ = 0;
   double n_v_ = 0;
+  double NIS_ = 0;
 
   VectorXd nu_;
   VectorXd x_aug_;
@@ -58,10 +59,6 @@ private:
 
 
   double Lambda_ = sqrt(3); // sqrt(lambda + n)
-
-
-
-
   VectorXd weights_;
 
   // MatrixXd A_;
