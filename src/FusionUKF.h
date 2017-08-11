@@ -1,30 +1,24 @@
-#ifndef FusionEKF_H_
-#define FusionEKF_H_
+#ifndef FusionUKF_H_
+#define FusionUKF_H_
 
 #include "measurement_package.h"
 #include "Eigen/Dense"
-#include "kalman_filter.h"
+#include "CTRV.h"
 #include "Sensors.h"
 
-class FusionEKF {
+class FusionUKF {
 public:
   // Constructor.
-  FusionEKF();
+  FusionUKF();
 
   // Destructor.
-  virtual ~FusionEKF();
+  virtual ~FusionUKF();
 
   // Run the whole flow of the Kalman Filter from here.
   void ProcessMeasurement(MeasurementPackage &measurement_pack);
 
-  /* State transition matrix and process covariance matrix
-   * @param dt Time difference since last update
-  */
-  inline Eigen::MatrixXd F(float dt);
-  inline Eigen::MatrixXd Q(float dt);
-
   // Kalman Filter update and prediction math lives in here.
-  KalmanFilter ekf_;
+  CTRV ctrv_;
 
   // Sensors
   Radar radar_;
@@ -38,4 +32,4 @@ private:
   long long previous_timestamp_;
 };
 
-#endif /* FusionEKF_H_ */
+#endif /* FusionUKF_H_ */
